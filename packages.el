@@ -2,9 +2,9 @@
 ;;
 ;; Copyright (c) 2012-2014 Sylvain Benner
 ;; Copyright (c) 2014-2015 Sylvain Benner & Contributors
+;; Copyright (c) 2016-2017 Marco Schlumppp
 ;;
-;; Author: Sylvain Benner <sylvain.benner@gmail.com>
-;; URL: https://github.com/syl20bnr/spacemacs
+;; Author: Marco Schlumpp <marco.schlumpp@gmail.com>
 ;;
 ;; This file is not part of GNU Emacs.
 ;;
@@ -17,15 +17,9 @@
         cmake-mode
         rtags
         popwin
-        irony
-        irony-eldoc
         cpputils-cmake
-        flycheck
-        flycheck-irony
         ;; Auto-completition
-        company
-        company-irony
-        company-irony-c-headers))
+        company))
 
 ;; List of packages to exclude.
 (setq better-cpp-excluded-packages '())
@@ -47,6 +41,12 @@
   (use-package rtags
     :defer t
     :init
+    (when (configuration-layer/layer-usedp 'auto-completion)
+      (require 'company-rtags)
+      (push 'company-rtags company-backends-c++-mode)
+      (setq rtags-completions-enabled t)
+      (setq rtags-autostart-diagnostics t))
+
     (evil-leader/set-key-for-mode 'c++-mode
       "." 'rtags-find-symbol-at-point
       "," 'rtags-location-stack-back
@@ -92,20 +92,6 @@
 (defun better-cpp/post-init-popwin ()
   (push '("*RTags*" :noselect t :position bottom :width 60) popwin:special-display-config))
 
-(defun better-cpp/init-irony ()
-  (use-package irony
-    :init
-    (add-hook 'c++-mode-hook 'irony-mode)
-    (add-hook 'c-mode-hook 'irony-mode)
-    (add-hook 'irony-mode-hook 'irony-cdb-autosetup-compile-options)
-    :config
-    (spacemacs|diminish irony-mode " Ⓘ" " I")))
-
-(defun better-cpp/init-irony-eldoc ()
-  :if (configuration-layer/package-usedp 'irony)
-  :init
-  (add-hook 'irony-mode-hook 'irony-eldoc))
-
 (defun better-cpp/init-cpputils-cmake ()
   (use-package cpputils-cmake
     :init
@@ -120,36 +106,7 @@
     :init
     (push 'company-cmake company-backends-cmake-mode)))
 
-(when (configuration-layer/layer-usedp 'syntax-checking)
-  (defun better-cpp/post-init-flycheck ()
-    (spacemacs/add-to-hooks 'flycheck-mode '(c-mode-hook c++-mode-hook)))
-
-  (defun better-cpp/init-flycheck-irony ()
-    (use-package flycheck-irony
-      :if (and (configuration-layer/package-usedp 'flycheck)
-               (configuration-layer/package-usedp 'irony))
-      :init
-      (add-hook 'irony-mode-hook 'flycheck-irony-setup))))
-
 (when (configuration-layer/layer-usedp 'auto-completion)
   (defun better-cpp/post-init-company ()
     (spacemacs|add-company-hook c++-mode)
-    (spacemacs|add-company-hook c-mode))
-
-  (defun better-cpp/init-company-irony ()
-    (use-package company-irony
-      :if (and (configuration-layer/package-usedp 'company)
-               (configuration-layer/package-usedp 'irony))
-      :defer t
-      :init
-      (push 'company-irony company-backends-c++-mode)
-      (push 'company-irony company-backends-c-mode)))
-
-  (defun better-cpp/init-company-irony-c-headers ()
-    (use-package company-irony-c-headers
-      :if (and (configuration-layer/package-usedp 'company)
-               (configuration-layer/package-usedp 'irony))
-      :defer t
-      :init
-      (push 'company-irony-c-headers company-backends-c++-mode)
-      (push 'company-irony-c-headers company-backends-c-mode))))
+    (spacemacs|add-company-hook c-mode)))
